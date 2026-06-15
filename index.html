@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=1.0">
+    <title>人员信息管理系统 · 权限管理版</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #1f1f1f;
+            --border: #e0e0e0;
+            --radius: 12px;
+            --danger: #d93025;
+            --success: #0d904f;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height:100vh; }
+        .header { background:white; border-bottom:1px solid var(--border); padding:10px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+        .header-brand { font-size:18px; font-weight:700; color:var(--primary); }
+        .header-stats { display:flex; gap:12px; font-size:13px; }
+        .header-stats span { background:#f0f0f0; padding:4px 10px; border-radius:20px; }
+        .main-container { max-width:1300px; margin:0 auto; padding:16px; }
+        .search-bar { background:white; border-radius:var(--radius); padding:14px; margin-bottom:14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+        .search-input-wrapper { flex:1; min-width:200px; position:relative; }
+        .search-input-wrapper input { width:100%; padding:10px 40px 10px 14px; border:2px solid #ddd; border-radius:24px; font-size:15px; outline:none; }
+        .btn { padding:10px 16px; border-radius:24px; font-size:14px; font-weight:500; cursor:pointer; border:1.5px solid transparent; background:white; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+        .btn-primary { background:var(--primary); color:white; border-color:var(--primary); }
+        .btn-outline { border-color:#ddd; }
+        .btn-warning { background:#fbbc04; color:#202124; border-color:#fbbc04; }
+        .btn-danger { background:var(--danger); color:white; border-color:var(--danger); }
+        .btn-success { background:var(--success); color:white; border-color:var(--success); }
+        .btn-lock { background:#333; color:white; border-color:#333; }
+        .table-wrapper { background:white; border-radius:var(--radius); box-shadow:0 1px 3px rgba(0,0,0,0.05); overflow-x:auto; margin-bottom:16px; }
+        table { width:100%; border-collapse:collapse; font-size:13px; min-width:1100px; }
+        th, td { padding:10px 8px; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
+        th { background:#fafbfc; text-align:left; font-weight:600; border-bottom:2px solid #eee; }
+        .checkbox-cell { width:40px; text-align:center; }
+        .checkbox-cell input { width:16px; height:16px; cursor:pointer; }
+        .avatar-placeholder { width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:white; font-weight:700; margin-right:6px; }
+        .badge { padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .badge-done { background:#e6f4ea; color:#137333; } .badge-pending { background:#fef7e0; color:#b06000; } .badge-expired { background:#fce8e6; color:#c5221f; }
+        .action-btns button { padding:4px 10px; border-radius:14px; font-size:12px; border:1px solid #ccc; background:white; cursor:pointer; }
+        .pagination { display:flex; justify-content:center; gap:6px; padding:14px; }
+        .pagination button { min-width:34px; height:34px; border-radius:50%; border:1px solid #ddd; background:white; cursor:pointer; }
+        .pagination button.active { background:var(--primary); color:white; }
+        .cards-area { display:flex; flex-direction:column; gap:16px; }
+        .person-card { background:white; border-radius:var(--radius); padding:20px; border:1px solid var(--border); display:flex; flex-wrap:wrap; gap:20px; }
+        .card-left { flex:0 0 200px; display:flex; flex-direction:column; align-items:center; }
+        .card-left .large-avatar { width:90px; height:90px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; color:white; }
+        .card-right { flex:1; min-width:280px; }
+        .info-row { display:flex; flex-wrap:wrap; gap:12px 24px; margin-bottom:12px; }
+        .info-item { min-width:140px; } .info-item label { font-size:12px; color:#888; display:block; }
+        .photo-gallery { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+        .photo-thumb { width:130px; border:2px dashed #ddd; border-radius:8px; overflow:hidden; background:#fafafa; text-align:center; }
+        .photo-thumb img { width:100%; height:90px; object-fit:cover; display:block; }
+        .photo-thumb .caption { font-size:11px; padding:4px; background:#f5f5f5; }
+        .no-photo { display:flex; align-items:center; justify-content:center; height:90px; color:#aaa; font-size:24px; }
+        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; display:none; align-items:center; justify-content:center; }
+        .modal-overlay.active { display:flex; }
+        .modal { background:white; border-radius:var(--radius); width:95%; max-width:750px; max-height:85vh; overflow-y:auto; padding:20px; position:relative; }
+        .modal-close { position:absolute; top:10px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; }
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .form-group { display:flex; flex-direction:column; gap:4px; } .form-group.full { grid-column:1/-1; }
+        .form-group label { font-size:13px; font-weight:600; color:#555; }
+        .form-group input, .form-group select, .form-group textarea { padding:10px; border:2px solid #ddd; border-radius:8px; font-size:14px; }
+        .photo-upload-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .photo-upload-row input[type="text"] { flex:1; min-width:160px; }
+        .photo-upload-row button { padding:8px 14px; border:2px solid var(--primary); background:white; color:var(--primary); border-radius:8px; cursor:pointer; }
+        .photo-preview { width:60px; height:60px; border-radius:8px; border:2px dashed #ccc; overflow:hidden; background:#f9f9f9; display:flex; align-items:center; justify-content:center; }
+        .photo-preview img { width:100%; height:100%; object-fit:cover; }
+        .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; z-index:2000; opacity:0; transition:0.3s; }
+        .toast.show { opacity:1; }
+        .hidden-admin { display:none; }
+        .admin-visible { display:inline-flex; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-brand">👥 人员信息管理系统</div>
+    <div class="header-stats">
+        <span>总人数 <strong id="totalCount">180</strong></span>
+        <span>已教育 <strong id="trainedCount">0</strong></span>
+    </div>
+</header>
+
+<div class="main-container">
+    <div class="search-bar">
+        <label>🔍 姓名</label>
+        <div class="search-input-wrapper">
+            <input type="text" id="searchInput" placeholder="输入姓名、身份证或电话...">
+        </div>
+        <button class="btn btn-outline" id="resetBtn">显示全部</button>
+        <!-- 管理模式按钮 -->
+        <button class="btn btn-lock" id="toggleAdminBtn">🔒 管理模式</button>
+        <!-- 管理操作按钮组 (默认隐藏) -->
+        <span id="adminActions" style="display:none; gap:8px; align-items:center;">
+            <button class="btn btn-danger" id="batchDeleteBtn" disabled>🗑️ 批量删除</button>
+            <span class="selected-count" id="selectedCount">已选 <strong>0</strong> 人</span>
+            <button class="btn btn-warning" id="batchUploadBtn">📁 批量上传照片</button>
+            <button class="btn btn-success" id="batchAddBtn">📋 批量添加人员</button>
+            <button class="btn btn-primary" id="addPersonBtn">➕ 添加人员</button>
+        </span>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <span id="resultInfo">共显示 180 条</span>
+        <select id="pageSizeSelect" style="padding:6px 12px; border-radius:20px; border:1px solid #ccc;">
+            <option value="15">15条/页</option><option value="20" selected>20条/页</option>
+            <option value="30">30条/页</option><option value="50">50条/页</option>
+        </select>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th class="checkbox-cell admin-visible" id="thCheckbox"><input type="checkbox" id="selectAll"></th>
+                <th>#</th><th>姓名</th><th>进场日期</th><th>身份证号</th><th>电话</th><th>安全教育</th>
+                <th id="thActions">操作</th>
+            </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    <div class="cards-area" id="cardsArea"></div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal-overlay" id="editOverlay">
+    <div class="modal">
+        <button class="modal-close" id="closeEdit">✕</button>
+        <h2 id="editTitle">编辑人员</h2>
+        <form id="editForm" class="form-grid">
+            <div class="form-group"><label>姓名 *</label><input type="text" id="eName" required></div>
+            <div class="form-group"><label>进场日期</label><input type="date" id="eEntryDate"></div>
+            <div class="form-group"><label>身份证号</label><input type="text" id="eIdNumber"></div>
+            <div class="form-group"><label>联系电话</label><input type="text" id="ePhone"></div>
+            <div class="form-group"><label>安全教育</label><select id="eSafetyStatus"><option value="未完成">未完成</option><option value="进行中">进行中</option><option value="已完成">已完成</option><option value="已过期">已过期</option></select></div>
+            <div class="form-group"><label>安全教育日期</label><input type="date" id="eSafetyDate"></div>
+            <div class="form-group full"><label>📸 人员照片</label><div class="photo-upload-row"><input type="text" id="ePhoto"><button type="button" class="upload-btn" data-target="ePhoto">📷 选照片</button><div class="photo-preview" id="previewPhoto"></div></div></div>
+            <div class="form-group full"><label>🪪 身份证照片</label><div class="photo-upload-row"><input type="text" id="eIdCard"><button type="button" class="upload-btn" data-target="eIdCard">📷 选照片</button><div class="photo-preview" id="previewIdCard"></div></div></div>
+            <div class="form-group full"><label>📝 培训考试照片</label><div class="photo-upload-row"><input type="text" id="eTraining"><button type="button" class="upload-btn" data-target="eTraining">📷 选照片</button><div class="photo-preview" id="previewTraining"></div></div></div>
+            <div class="form-group full"><label>🏥 体检表照片</label><div class="photo-upload-row"><input type="text" id="eMedical"><button type="button" class="upload-btn" data-target="eMedical">📷 选照片</button><div class="photo-preview" id="previewMedical"></div></div></div>
+            <div class="form-group full"><label>🛡️ 保险照片</label><div class="photo-upload-row"><input type="text" id="eInsurance"><button type="button" class="upload-btn" data-target="eInsurance">📷 选照片</button><div class="photo-preview" id="previewInsurance"></div></div></div>
+            <div class="form-group full" style="display:flex; gap:10px; justify-content:flex-end;"><button type="button" class="btn btn-outline" id="cancelEditBtn">取消</button><button type="submit" class="btn btn-primary">💾 保存</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- 批量上传照片弹窗 -->
+<div class="modal-overlay" id="batchOverlay">
+    <div class="modal"><button class="modal-close" id="closeBatch">✕</button>
+        <h2>📁 批量上传照片</h2>
+        <p style="font-size:14px; color:#555; margin:10px 0;">选择照片类型，然后选择包含照片的文件夹（文件名需与人员姓名一致）</p>
+        <div class="form-group" style="margin-bottom:16px;"><label>照片类别</label><select id="batchType"><option value="photo">人员照片</option><option value="idCard">身份证照片</option><option value="training">培训考试照片</option><option value="medical">体检表照片</option><option value="insurance">保险照片</option></select></div>
+        <div style="display:flex; gap:10px; align-items:center;"><button class="btn btn-primary" id="selectFolderBtn">📂 选择文件夹</button><span id="folderName"></span></div>
+        <div class="progress-bar" style="display:none;" id="progressWrapper"><div class="fill" id="progressFill"></div></div>
+        <div id="batchStatus" style="font-size:13px; margin:10px 0;"></div>
+        <div class="batch-result" id="batchResult" style="display:none;"></div>
+        <button class="btn btn-outline" id="closeBatchBtn" style="margin-top:12px;">关闭</button>
+    </div>
+</div>
+
+<!-- 批量添加人员弹窗 -->
+<div class="modal-overlay" id="batchAddOverlay">
+    <div class="modal"><button class="modal-close" id="closeBatchAdd">✕</button>
+        <h2>📋 批量添加人员</h2>
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="paste">📋 粘贴数据</button>
+            <button class="tab-btn" data-tab="file">📂 上传CSV文件</button>
+        </div>
+        <div id="tabPaste">
+            <p style="font-size:13px; color:#555;">从Excel复制数据（含标题行）粘贴至下方：<br>格式：<code>姓名,进场日期,身份证号,电话,安全教育,安全教育日期</code></p>
+            <textarea id="pasteData" rows="8" style="width:100%; font-family:monospace;" placeholder="张三	2024-01-15	110101199001011234	13800138000	已完成	2024-06-01
+李四	2024-02-20	320102199205052345	13912345678	进行中	待考核"></textarea>
+            <button class="btn btn-primary" id="parsePasteBtn">🔍 预览数据</button>
+        </div>
+        <div id="tabFile" style="display:none;">
+            <p style="font-size:13px; color:#555;">选择CSV文件（UTF-8编码）</p>
+            <input type="file" id="csvFileInput" accept=".csv" style="margin:10px 0;">
+            <button class="btn btn-primary" id="parseFileBtn">🔍 解析文件</button>
+        </div>
+        <div id="previewArea" style="margin-top:16px; display:none;">
+            <h3>数据预览 (共 <span id="previewCount">0</span> 条)</h3>
+            <div style="max-height:250px; overflow:auto; border:1px solid #eee; border-radius:8px;">
+                <table class="preview-table" id="previewTable"></table>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-outline" id="cancelPreviewBtn">取消</button>
+                <button class="btn btn-success" id="confirmImportBtn">✅ 确认导入</button>
+            </div>
+        </div>
+        <button class="btn btn-outline" id="closeBatchAddBtn" style="margin-top:12px;">关闭</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        // ---------- 模拟数据 ----------
+        const surnames = ['张','李','王','刘','陈','杨','黄','赵','周','吴','徐','孙','马','朱','胡','郭','林','何','高','梁','郑','罗','宋','谢','唐','韩','曹','许','邓','冯','彭','曾','肖','田','董','潘','袁','蔡','蒋','余','于','杜','叶','程','苏','魏','吕','丁','任','沈','姚','卢','姜','崔','钟','谭','陆','汪','范','金','石','廖','贾','夏','韦','付','方','白','邹','孟','熊','秦','邱','江','尹','薛','闫','段','雷','侯','龙','史','陶','黎','贺','顾','毛','郝','龚','邵','万','钱','严','覃','武','戴','莫','孔','向','常'];
+        const names = ['伟','强','磊','军','勇','杰','涛','明','辉','鹏','浩','峰','波','斌','刚','超','飞','毅','俊','宁','志伟','建国','建华','文博','子豪','宇轩','浩然','天宇','子涵','博文','嘉诚','俊杰','铭泽','睿宸','梓豪','一鸣','思远','承志','弘毅','修齐','致远','景行','明哲','鸿飞','云飞','鹏程','志远','永康','德厚','仁杰','芳','敏','静','丽','婷','雪','琳','萍','艳','娟','娜','霞','红','梅','玲','云','琴','莉','慧','洁','晓燕','秀英','美玲','玉兰','桂芳','淑珍','丽华','秀兰','雅婷','诗涵','欣怡','雨彤','梓萱','梦瑶','若曦','思雨','嫣然','清雅','婉如','静怡','芷若','念慈','灵犀','曼琳','悦然','馨予','瑾瑜','琳琅','琼华','瑶光'];
+        const avatarColors = ['#4285f4','#ea4335','#fbbc04','#34a853','#ff6d01','#46bdc6','#7b1fa2','#c2185b','#0097a7','#f4511e','#5c6bc0','#26a69a','#ab47bc','#ef5350','#42a5f5','#66bb6a','#ffa726','#8d6e63','#78909c','#ec407a'];
+        function randDate(s,e){ return new Date(s.getTime()+Math.random()*(e.getTime()-s.getTime())).toISOString().split('T')[0]; }
+        function genId(){ let s=''; for(let i=0;i<17;i++) s+=Math.floor(Math.random()*10); return s+'X'; }
+        function genPhone(){ let p='1'; for(let i=0;i<9;i++) p+=Math.floor(Math.random()*10); return p; }
+
+        const personnelData = [];
+        for(let i=0; i<180; i++){
+            const name = surnames[i%surnames.length] + names[Math.floor(Math.random()*names.length)];
+            const entry = randDate(new Date(2022,0,1), new Date(2025,11,31));
+            const safety = ['已完成','已完成','已完成','进行中','未完成','已过期'][Math.floor(Math.random()*6)];
+            const safetyDate = safety==='已完成'?randDate(new Date(2023,0,1),new Date(2025,5,30)):(safety==='进行中'?'待考核':'—');
+            personnelData.push({ id: i+1, name, entryDate:entry, idNumber:genId(), phone:genPhone(), safetyStatus:safety, safetyDate, safetyCss: safety==='已完成'?'badge-done':(safety==='进行中'?'badge-pending':'badge-expired'), avatarColor: avatarColors[i%avatarColors.length], initial: name.charAt(0), photo:'', idCard:'', training:'', medical:'', insurance:'' });
+        }
+
+        let filtered = [...personnelData];
+        let currentPage = 1, pageSize = 20, editId = null;
+        let selectedIds = new Set();
+        let pendingImportData = [];
+        let adminMode = false; // 管理模式开关
+
+        const tableBody = document.getElementById('tableBody');
+        const pagination = document.getElementById('pagination');
+        const searchInput = document.getElementById('searchInput');
+        const resultInfo = document.getElementById('resultInfo');
+        const cardsArea = document.getElementById('cardsArea');
+        const editOverlay = document.getElementById('editOverlay');
+        const batchOverlay = document.getElementById('batchOverlay');
+        const batchAddOverlay = document.getElementById('batchAddOverlay');
+        const toast = document.getElementById('toast');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const adminActions = document.getElementById('adminActions');
+        const thCheckbox = document.getElementById('thCheckbox');
+        const thActions = document.getElementById('thActions');
+        const toggleAdminBtn = document.getElementById('toggleAdminBtn');
+
+        function updateStats(){
+            document.getElementById('totalCount').textContent = personnelData.length;
+            document.getElementById('trainedCount').textContent = personnelData.filter(p=>p.safetyStatus==='已完成').length;
+        }
+        function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2000); }
+
+        function updateSelectedUI(){
+            if(!adminMode) return;
+            const count = selectedIds.size;
+            selectedCountSpan.querySelector('strong').textContent = count;
+            batchDeleteBtn.disabled = count === 0;
+            if(count > 0) selectedCountSpan.style.display = 'inline';
+            else selectedCountSpan.style.display = 'none';
+        }
+
+        function applyAdminUI(){
+            if(adminMode){
+                toggleAdminBtn.innerHTML = '🔓 退出管理';
+                toggleAdminBtn.classList.add('btn-lock');
+                adminActions.style.display = 'flex';
+                thCheckbox.style.display = 'table-cell';
+                thActions.style.display = 'table-cell';
+            } else {
+                toggleAdminBtn.innerHTML = '🔒 管理模式';
+                toggleAdminBtn.classList.add('btn-lock');
+                adminActions.style.display = 'none';
+                thCheckbox.style.display = 'none';
+                thActions.style.display = 'none';
+                selectedIds.clear();
+                updateSelectedUI();
+            }
+            renderTable();
+            updateCards();
+        }
+
+        toggleAdminBtn.addEventListener('click', function(){
+            if(!adminMode){
+                const pwd = prompt('请输入管理密码：');
+                if(pwd === 'admin123') { // 默认密码
+                    adminMode = true;
+                    showToast('已进入管理模式');
+                    applyAdminUI();
+                } else if(pwd !== null) {
+                    showToast('密码错误');
+                }
+            } else {
+                if(confirm('确定退出管理模式吗？')) {
+                    adminMode = false;
+                    showToast('已退出管理模式');
+                    applyAdminUI();
+                }
+            }
+        });
+
+        function filterData(q){
+            filtered = q.trim() ? personnelData.filter(p=>p.name.includes(q)||p.idNumber.includes(q)||p.phone.includes(q)) : [...personnelData];
+            currentPage = 1;
+            selectedIds.clear();
+            updateSelectedUI();
+            renderTable();
+            updateCards();
+            updateStats();
+        }
+
+        searchInput.addEventListener('input', ()=>filterData(searchInput.value));
+        document.getElementById('resetBtn').addEventListener('click', ()=>{ searchInput.value=''; filterData(''); });
+        document.getElementById('pageSizeSelect').addEventListener('change', function(){ pageSize=+this.value; currentPage=1; selectedIds.clear(); updateSelectedUI(); renderTable(); });
+
+        function renderTable(){
+            const totalPages = Math.ceil(filtered.length/pageSize)||1;
+            if(currentPage>totalPages) currentPage=totalPages;
+            const start = (currentPage-1)*pageSize;
+            const pageData = filtered.slice(start, start+pageSize);
+            resultInfo.innerHTML = `显示 ${filtered.length} 人`;
+
+            if(adminMode){
+                const allSelected = pageData.length>0 && pageData.every(p=>selectedIds.has(p.id));
+                selectAllCheckbox.checked = allSelected;
+            }
+
+            let html = '';
+            if(!pageData.length){
+                html = `<tr><td colspan="${adminMode?8:7}" style="text-align:center;padding:40px;">📭 无匹配人员</td></tr>`;
+            } else {
+                pageData.forEach(p=>{
+                    html += `<tr data-id="${p.id}">`;
+                    if(adminMode) html += `<td class="checkbox-cell"><input type="checkbox" class="row-checkbox" data-id="${p.id}" ${selectedIds.has(p.id)?'checked':''}></td>`;
+                    html += `<td>${p.id}</td>
+                        <td><span class="avatar-placeholder" style="background:${p.avatarColor}">${p.initial}</span>${p.name}</td>
+                        <td>${p.entryDate}</td><td>${p.idNumber}</td><td>${p.phone}</td>
+                        <td><span class="badge ${p.safetyCss}">${p.safetyStatus}</span></td>`;
+                    if(adminMode) html += `<td class="action-btns"><button class="edit-btn" data-id="${p.id}">✏️编辑</button><button class="del-btn" data-id="${p.id}">🗑️删除</button></td>`;
+                    html += `</tr>`;
+                });
+            }
+            tableBody.innerHTML = html;
+
+            if(adminMode){
+                document.querySelectorAll('.row-checkbox').forEach(cb=>{
+                    cb.addEventListener('change', function(e){
+                        e.stopPropagation();
+                        const id = +this.dataset.id;
+                        if(this.checked) selectedIds.add(id); else selectedIds.delete(id);
+                        updateSelectedUI();
+                        const allSelected = pageData.length>0 && pageData.every(p=>selectedIds.has(p.id));
+                        selectAllCheckbox.checked = allSelected;
+                    });
+                });
+                document.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); openEdit(personnelData.find(p=>p.id===+b.dataset.id)); }));
+                document.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click', e=>{
+                    e.stopPropagation();
+                    if(confirm('确认删除？')){
+                        const idx=personnelData.findIndex(p=>p.id===+b.dataset.id);
+                        if(idx>-1) personnelData.splice(idx,1);
+                        selectedIds.delete(+b.dataset.id); updateSelectedUI();
+                        filterData(searchInput.value);
+                    }
+                }));
+            }
+
+            document.querySelectorAll('tbody tr[data-id]').forEach(row=>row.addEventListener('click', function(e){
+                if(e.target.tagName==='INPUT'||e.target.closest('button')) return;
+                const p = personnelData.find(p=>p.id===+this.dataset.id);
+                if(p) toggleCard(p);
+            }));
+
+            pagination.innerHTML = totalPages>1 ? Array.from({length:totalPages},(_,i)=>`<button class="${i+1===currentPage?'active':''}" data-page="${i+1}">${i+1}</button>`).join('') : '';
+            pagination.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{ currentPage=+b.dataset.page; renderTable(); }));
+        }
+
+        selectAllCheckbox.addEventListener('change', function(){
+            if(!adminMode) return;
+            const start = (currentPage-1)*pageSize;
+            const pageData = filtered.slice(start, start+pageSize);
+            if(this.checked) pageData.forEach(p=>selectedIds.add(p.id));
+            else pageData.forEach(p=>selectedIds.delete(p.id));
+            updateSelectedUI();
+            renderTable();
+        });
+
+        batchDeleteBtn.addEventListener('click', function(){
+            if(!adminMode || !selectedIds.size) return;
+            if(!confirm(`确定删除选中的 ${selectedIds.size} 人吗？`)) return;
+            for(const id of selectedIds) { const idx = personnelData.findIndex(p=>p.id===id); if(idx!==-1) personnelData.splice(idx,1); }
+            showToast(`已删除 ${selectedIds.size} 人`);
+            selectedIds.clear(); updateSelectedUI();
+            filterData(searchInput.value);
+        });
+
+        function updateCards(){ cardsArea.innerHTML = ''; if(filtered.length>0 && filtered.length<=5) filtered.forEach(p=>cardsArea.appendChild(createCard(p))); }
+
+        function toggleCard(person){
+            const existing = document.getElementById(`card-${person.id}`);
+            if(existing) existing.remove();
+            else { const card = createCard(person); cardsArea.insertBefore(card, cardsArea.firstChild); card.scrollIntoView({behavior:'smooth'}); }
+        }
+
+        function createCard(p){
+            const card = document.createElement('div'); card.className='person-card'; card.id=`card-${p.id}`;
+            const safetyText = p.safetyDate && p.safetyDate!=='待考核'&&p.safetyDate!=='—' ? ` (${p.safetyDate})` : '';
+            const thumb = (src, icon, label) => src ? `<div class="photo-thumb"><img src="${src}" onerror="this.parentElement.innerHTML='<div class=no-photo>❌</div><div class=caption>${label}</div>';"><div class="caption">${label}</div></div>` : `<div class="photo-thumb"><div class="no-photo">${icon}</div><div class="caption">${label}</div></div>`;
+            card.innerHTML = `
+                <div class="card-left"><div class="large-avatar" style="background:${p.avatarColor}">${p.initial}</div><h3>${p.name}</h3><span>进场：${p.entryDate}</span></div>
+                <div class="card-right">
+                    <div class="info-row"><div class="info-item"><label>身份证号</label>${p.idNumber}</div><div class="info-item"><label>电话</label>${p.phone}</div><div class="info-item"><label>安全教育</label><span class="badge ${p.safetyCss}">${p.safetyStatus}</span>${safetyText}</div></div>
+                    <div style="margin-bottom:12px;"><label style="font-weight:600;">📸 人员照片</label>${p.photo?`<img src="${p.photo}" style="max-width:200px;border-radius:8px;">`:'<div style="color:#999;padding:20px;background:#f5f5f5;border-radius:8px;">暂无照片</div>'}</div>
+                    <div><label style="font-weight:600;">📄 证件资料</label><div class="photo-gallery">${thumb(p.idCard,'🪪','身份证')}${thumb(p.training,'📝','培训')}${thumb(p.medical,'🏥','体检')}${thumb(p.insurance,'🛡️','保险')}</div></div>
+                </div>`;
+            return card;
+        }
+
+        // 编辑功能（需要管理模式）
+        function openEdit(person=null){
+            if(!adminMode) { showToast('请先进入管理模式'); return; }
+            editId = person?.id || null;
+            document.getElementById('editTitle').textContent = person ? '编辑人员信息' : '添加新人员';
+            document.getElementById('eName').value = person?.name || '';
+            document.getElementById('eEntryDate').value = person?.entryDate || new Date().toISOString().split('T')[0];
+            document.getElementById('eIdNumber').value = person?.idNumber || '';
+            document.getElementById('ePhone').value = person?.phone || '';
+            document.getElementById('eSafetyStatus').value = person?.safetyStatus || '未完成';
+            document.getElementById('eSafetyDate').value = (person?.safetyDate?.match(/\d{4}-\d{2}-\d{2}/)||[])[0] || '';
+            document.getElementById('ePhoto').value = person?.photo || '';
+            document.getElementById('eIdCard').value = person?.idCard || '';
+            document.getElementById('eTraining').value = person?.training || '';
+            document.getElementById('eMedical').value = person?.medical || '';
+            document.getElementById('eInsurance').value = person?.insurance || '';
+            updatePreviews();
+            editOverlay.classList.add('active');
+        }
+        function closeEdit(){ editOverlay.classList.remove('active'); }
+        document.getElementById('closeEdit').addEventListener('click', closeEdit);
+        document.getElementById('cancelEditBtn').addEventListener('click', closeEdit);
+        editOverlay.addEventListener('click', e=>{ if(e.target===editOverlay) closeEdit(); });
+
+        function handleSingleUpload(btn){
+            const targetId = btn.dataset.target;
+            const input = document.createElement('input'); input.type='file'; input.accept='image/*';
+            document.body.appendChild(input);
+            input.addEventListener('change', function(){
+                const file = input.files[0];
+                if(!file){ document.body.removeChild(input); return; }
+                const reader = new FileReader();
+                reader.onload = e => { document.getElementById(targetId).value = e.target.result; updatePreview(targetId); showToast('照片已选择'); document.body.removeChild(input); };
+                reader.readAsDataURL(file);
+            });
+            input.click();
+        }
+        function updatePreview(id){
+            const map={ePhoto:'previewPhoto',eIdCard:'previewIdCard',eTraining:'previewTraining',eMedical:'previewMedical',eInsurance:'previewInsurance'};
+            const div=document.getElementById(map[id]);
+            if(div) div.innerHTML = document.getElementById(id).value ? `<img src="${document.getElementById(id).value}">` : '';
+        }
+        function updatePreviews(){ ['ePhoto','eIdCard','eTraining','eMedical','eInsurance'].forEach(updatePreview); }
+        document.querySelectorAll('.upload-btn').forEach(b=>b.addEventListener('click', ()=>handleSingleUpload(b)));
+
+        document.getElementById('editForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            const name = document.getElementById('eName').value.trim();
+            if(!name){ showToast('姓名不能为空'); return; }
+            const safetyStatus = document.getElementById('eSafetyStatus').value;
+            let safetyDate = document.getElementById('eSafetyDate').value;
+            if(safetyStatus==='已完成' && !safetyDate) safetyDate = new Date().toISOString().split('T')[0];
+            else if(safetyStatus==='进行中') safetyDate='待考核'; else safetyDate='—';
+            const data = {
+                name, entryDate: document.getElementById('eEntryDate').value,
+                idNumber: document.getElementById('eIdNumber').value,
+                phone: document.getElementById('ePhone').value,
+                safetyStatus, safetyDate,
+                safetyCss: {'已完成':'badge-done','进行中':'badge-pending','未完成':'badge-expired','已过期':'badge-expired'}[safetyStatus],
+                photo: document.getElementById('ePhoto').value.trim(),
+                idCard: document.getElementById('eIdCard').value.trim(),
+                training: document.getElementById('eTraining').value.trim(),
+                medical: document.getElementById('eMedical').value.trim(),
+                insurance: document.getElementById('eInsurance').value.trim()
+            };
+            if(editId){
+                const idx = personnelData.findIndex(p=>p.id===editId);
+                if(idx>-1){ data.id=editId; data.avatarColor=personnelData[idx].avatarColor; Object.assign(personnelData[idx], data); }
+                showToast('已更新');
+            } else {
+                data.id = Math.max(...personnelData.map(p=>p.id),0)+1;
+                data.avatarColor = avatarColors[data.id%avatarColors.length];
+                data.initial = name.charAt(0);
+                personnelData.push(data);
+                showToast('已添加');
+            }
+            closeEdit(); filterData(searchInput.value);
+        });
+
+        // 批量上传照片（需要管理模式）
+        document.getElementById('batchUploadBtn').addEventListener('click', ()=>{ if(!adminMode){ showToast('请先进入管理模式'); return; } batchOverlay.classList.add('active'); });
+        document.getElementById('closeBatch').addEventListener('click', ()=> batchOverlay.classList.remove('active'));
+        document.getElementById('closeBatchBtn').addEventListener('click', ()=> batchOverlay.classList.remove('active'));
+        document.getElementById('selectFolderBtn').addEventListener('click', function(){
+            const input = document.createElement('input'); input.type='file'; input.webkitdirectory=true; input.multiple=true;
+            document.body.appendChild(input);
+            input.addEventListener('change', async function(){
+                const files = Array.from(input.files); document.body.removeChild(input);
+                if(!files.length) return;
+                const typeKey = document.getElementById('batchType').value;
+                document.getElementById('folderName').textContent = `已选择 ${files.length} 个文件`;
+                const progressWrapper = document.getElementById('progressWrapper'); progressWrapper.style.display='block';
+                document.getElementById('progressFill').style.width='0%';
+                document.getElementById('batchStatus').textContent='处理中...';
+                let success=0, fail=[];
+                const nameMap = new Map(); personnelData.forEach(p=>nameMap.set(p.name, p));
+                for(let i=0; i<files.length; i++){
+                    const file=files[i]; const fileName=file.name.replace(/\.[^/.]+$/, "");
+                    const person=nameMap.get(fileName);
+                    if(person){
+                        try {
+                            const dataUrl = await new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); });
+                            person[typeKey]=dataUrl; success++;
+                        } catch(e){ fail.push(fileName); }
+                    } else { fail.push(fileName); }
+                    document.getElementById('progressFill').style.width = Math.round((i+1)/files.length*100)+'%';
+                    document.getElementById('batchStatus').textContent = `处理中 ${i+1}/${files.length}`;
+                    await new Promise(r=>setTimeout(r,10));
+                }
+                progressWrapper.style.display='none';
+                document.getElementById('batchStatus').textContent = `完成！成功匹配 ${success} 人`;
+                document.getElementById('batchResult').innerHTML = fail.length ? `<p style="color:#d93025;">未匹配 ${fail.length} 个</p>` : '<p style="color:#0d904f;">全部匹配成功</p>';
+                document.getElementById('batchResult').style.display='block';
+                filterData(searchInput.value);
+            });
+            input.click();
+        });
+
+        // 批量添加（需要管理模式）
+        document.getElementById('batchAddBtn').addEventListener('click', ()=>{ if(!adminMode){ showToast('请先进入管理模式'); return; } batchAddOverlay.classList.add('active'); });
+        document.getElementById('closeBatchAdd').addEventListener('click', ()=> batchAddOverlay.classList.remove('active'));
+        document.getElementById('closeBatchAddBtn').addEventListener('click', ()=> batchAddOverlay.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click', function(){
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('tabPaste').style.display = this.dataset.tab==='paste'?'block':'none';
+            document.getElementById('tabFile').style.display = this.dataset.tab==='file'?'block':'none';
+        }));
+        function parseDataText(text){
+            const lines = text.trim().split(/[\r\n]+/);
+            if(!lines.length) return [];
+            const headers = lines[0].split(/[\t,]/).map(h=>h.trim());
+            const data = [];
+            for(let i=1; i<lines.length; i++){
+                const vals = lines[i].split(/[\t,]/).map(v=>v.trim());
+                if(vals.length<2) continue;
+                const obj = {}; headers.forEach((h,idx)=> obj[h]=vals[idx]||''); data.push(obj);
+            }
+            return data;
+        }
+        document.getElementById('parsePasteBtn').addEventListener('click', ()=>{
+            const text = document.getElementById('pasteData').value;
+            const data = parseDataText(text);
+            if(!data.length){ showToast('无有效数据'); return; }
+            pendingImportData = data.map(row=>({
+                name: row['姓名']||'', entryDate: row['进场日期']||new Date().toISOString().split('T')[0],
+                idNumber: row['身份证号']||'', phone: row['电话']||'',
+                safetyStatus: row['安全教育']||'未完成', safetyDate: row['安全教育日期']||''
+            }));
+            showPreview();
+        });
+        document.getElementById('parseFileBtn').addEventListener('click', ()=>{
+            const file = document.getElementById('csvFileInput').files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const data = parseDataText(e.target.result);
+                if(!data.length){ showToast('无有效数据'); return; }
+                pendingImportData = data.map(row=>({
+                    name: row['姓名']||'', entryDate: row['进场日期']||new Date().toISOString().split('T')[0],
+                    idNumber: row['身份证号']||'', phone: row['电话']||'',
+                    safetyStatus: row['安全教育']||'未完成', safetyDate: row['安全教育日期']||''
+                }));
+                showPreview();
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+        function showPreview(){
+            document.getElementById('previewCount').textContent = pendingImportData.length;
+            document.getElementById('previewTable').innerHTML = '<tr><th>姓名</th><th>进场日期</th><th>身份证号</th><th>电话</th><th>安全教育</th><th>安全教育日期</th></tr>' +
+                pendingImportData.map(p=>`<tr><td>${p.name}</td><td>${p.entryDate}</td><td>${p.idNumber}</td><td>${p.phone}</td><td>${p.safetyStatus}</td><td>${p.safetyDate}</td></tr>`).join('');
+            document.getElementById('previewArea').style.display='block';
+        }
+        document.getElementById('cancelPreviewBtn').addEventListener('click', ()=>{ pendingImportData=[]; document.getElementById('previewArea').style.display='none'; });
+        document.getElementById('confirmImportBtn').addEventListener('click', ()=>{
+            if(!pendingImportData.length) return;
+            let maxId = Math.max(...personnelData.map(p=>p.id),0);
+            pendingImportData.forEach(row => {
+                maxId++;
+                const safetyCss = {'已完成':'badge-done','进行中':'badge-pending','未完成':'badge-expired','已过期':'badge-expired'}[row.safetyStatus]||'badge-expired';
+                personnelData.push({
+                    id: maxId, ...row,
+                    safetyCss, avatarColor: avatarColors[maxId%avatarColors.length],
+                    initial: row.name.charAt(0), photo:'', idCard:'', training:'', medical:'', insurance:''
+                });
+            });
+            showToast(`成功导入 ${pendingImportData.length} 人`);
+            pendingImportData=[]; document.getElementById('previewArea').style.display='none';
+            filterData(searchInput.value);
+        });
+
+        document.getElementById('addPersonBtn').addEventListener('click', ()=>openEdit(null));
+
+        // 初始化
+        applyAdminUI();
+        filterData('');
+        updateStats();
+    })();
+</script>
+</body>
+</html>
